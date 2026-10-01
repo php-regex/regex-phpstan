@@ -1,0 +1,71 @@
+parametersSchema:
+    phpRegex: structure([
+        # PHP version patterns are judged for: null for PHPStan's phpVersion
+        # (the PHP running PHPStan unless configured), 'runtime' for the PHP
+        # running PHPStan, a version like '8.2' or a PHP_VERSION_ID like 80200
+        phpVersion: schema(anyOf(string(), int()), nullable()),
+        # PCRE2 release patterns are judged for, like '10.42'; null for the
+        # one the PHP version bundles
+        pcreVersion: schema(string(), nullable()),
+        checks: structure([
+            lint: structure([
+                enabled: bool()
+            ]),
+            redos: structure([
+                enabled: bool(),
+                # Minimum severity reported
+                threshold: anyOf('low', 'medium', 'high', 'critical')
+            ]),
+            optimizations: structure([
+                enabled: bool(),
+                minSavings: int(),
+                options: structure([
+                    digits: bool(),
+                    word: bool(),
+                    ranges: bool(),
+                    canonicalizeCharClasses: bool(),
+                    possessive: bool(),
+                    factorize: bool(),
+                    minQuantifierCount: int(),
+                    verifyWithAutomata: bool()
+                ])
+            ])
+        ])
+    ])
+
+parameters:
+    phpRegex:
+        # Judge patterns for PHPStan's phpVersion, with the PCRE2 it bundles.
+        # A pattern is reported only when the running engine compiles it and
+        # the target refuses it: PHPStan itself reports what the running
+        # engine refuses.
+        phpVersion: null
+        pcreVersion: null
+
+        # Off by default; rules.neon turns lint and ReDoS on.
+        checks:
+            lint:
+                enabled: false
+            redos:
+                enabled: false
+                threshold: critical
+            optimizations:
+                enabled: false
+                minSavings: 1
+                options:
+                    digits: true
+                    word: true
+                    ranges: true
+                    canonicalizeCharClasses: true
+                    possessive: false
+                    factorize: false
+                    minQuantifierCount: 4
+                    verifyWithAutomata: true
+
+services:
+    -
+        class: PHPRegex\PHPStan\RegexPatternRule
+        arguments:
+            config: %phpRegex%
+        tags:
+            - phpstan.rules.rule
